@@ -1,2 +1,4 @@
-# SURF2023MixedMethodsSocialSciences
+# SURF 2023 Mixed Methods Social Sciences
 This repository contains the files needed to replicate the analysis for the 2023 SURF (Summer Undergrad Research Fellowship) workshop presentation titled "Mixed Methods in the Social Sciences: An Application to Migration Data".
+
+The code in the files below is intended to be used for educational purposes only. The data have been manipulated and are not representative of the population of interest used in my research work. Please do not circulate the materials used in this workshop outside of the SURF 2023 program. If you have any questions about the code, please email me at [rsherreratenorio@berkeley.edu](mailto:rsherreratenorio@berkeley.edu) and more of my information and background can be found on my website at [stevenherreratenorio.com](stevenherreratenorio.com). 
