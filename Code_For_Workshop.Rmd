@@ -1,0 +1,38 @@
+---
+title: 'SURF 2023: Mixed Methods in the Social Sciences'
+author: "Steven Herrera Tenorio"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+The code below is intended to be used for educational purposes only. The data have been manipulated and are not representative of the population of interest used in my research work. Please do not circulate the materials used in this workshop outside of the SURF 2023 program. If you have any questions about the code, please email me at [rsherreratenorio@berkeley.edu](mailto:rsherreratenorio@berkeley.edu) and more of my information and background can be found on my website at [stevenherreratenorio.com](stevenherreratenorio.com). 
+
+# Introduction
+
+To read the data in from IPUMS, copy and paste the code they provide to read in the data. Remember, you also need to download the XML file and make sure that the file is located in the working directory. If you cloned this RMD file from Github and opened the files as a Project in RStudio, the following code should work.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Data Manipulation (or Cleaning Data)
+
+
+
+# Exploratory Data Analysis (EDA)
+
+
+
+# Logistic Regression Models
+
+
+
+# Model Assessment
+
+
+
+# Predictions
+
+
+
