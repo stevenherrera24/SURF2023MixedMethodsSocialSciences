@@ -1,11 +1,11 @@
 ---
 title: 'SURF 2023: Mixed Methods in the Social Sciences'
-author: "Steven Herrera Tenorio"
+author: "Steven Herrera final_dforio"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
-The code below is intended to be used for educational purposes only. The data have been manipulated and are not representative of the population of interest used in my research work. Please do not circulate the materials used in this workshop outside of the SURF 2023 program. If you have any questions about the code, please email me at [rsherreratenorio@berkeley.edu](mailto:rsherreratenorio@berkeley.edu) and more of my information and background can be found on my website at [stevenherreratenorio.com](stevenherreratenorio.com). 
+The code below is infinal_dfded to be used for educational purposes only. The data have been manipulated and are not representative of the population of interest used in my research work. Please do not circulate the materials used in this workshop outside of the SURF 2023 program. If you have any questions about the code, please email me at [rsherrerafinal_dforio@berkeley.edu](mailto:rsherrerafinal_dforio@berkeley.edu) and more of my information and background can be found on my website at [stevenherrerafinal_dforio.com](stevenherrerafinal_dforio.com). 
 
 ```{r libraries, include = FALSE}
 pkgTest <- function(x) {
@@ -21,6 +21,7 @@ pkgTest("ggplot2")
 pkgTest("dplyr")
 pkgTest("labelled")
 pkgTest("Hmisc")
+pkgTest("cowplot")
 
 library(tidyverse)
 library(devtools)
@@ -28,6 +29,7 @@ library(ggplot2)
 library(dplyr)
 library(labelled)
 library(Hmisc)
+library(cowplot)
 ```
 
 # Introduction
@@ -278,11 +280,134 @@ tibble("Description" = c("Public-use microdata area that represents a 1 in 100 p
 
 # Exploratory Data Analysis (EDA)
 
-Now that we have our 
+Now that we have our final dataset, we will conduct some exploratory data analysis. Depending on the type of variable (e.g., categorical/factor or numerical), different visualization techniques that will inform us of key relationships must be used. If we are exploring between a categorical/factor variable and a numerical one, we offinal_df use boxplots. If we explore the relationship between two categorical variables, we offinal_df use a stacked bar plot. If we explore the relationship between two numerical variables, we offinal_df use a scatterplot. 
+
+## Numerical x Numerical
+
+```{r}
+final_df <- final_df %>%
+  mutate(val_Any_Race_H = case_when(
+    val_Any_Race_H %in% c(1,2,3) ~ "Low",
+    TRUE ~ "High"
+  ),
+  val_Any_Race_H = as.factor(val_Any_Race_H)) 
+
+pairs(val_Any_Race_H ~ AGE + HHINCOME_ind, 
+      data = final_df %>% filter(HHINCOME_ind != 9999999),
+      main = "Matrix of Scatterplots for Relevant Variables of Interest")
+```
+
+## Numerical x Categorical
+
+```{r fig.height=10, fig.width=8, message=FALSE}
+p1 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=AGE, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="AGE by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "AGE")
+p2 <- ggplot(data=final_df %>% filter(HHINCOME_ind != 9999999),aes(x=val_Any_Race_H,y=HHINCOME_ind, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Household Income by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Household Income")
+p3 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=Black_NON_H, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Black Non-Hispanic Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Black Non-Hispanic Prop")
+p4 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=Two_NON_H, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Two or More Race Non-Hispanic Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Two or More Race Non-Hispanic Prop")
+p5 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=White_NON_H, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="White Non-Hispanic Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "White Non-Hispanic Prop")
+p6 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=Asian_NON_H, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Asian Non-Hispanic Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Asian Non-Hispanic Prop")
+p7 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=Other_NON_H, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Other Non-Hispanic Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Other Non-Hispanic Prop")
+p8 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=`1`, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Lowest Educ Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Lowest Educ Prop")
+p9 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=`2`, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Second Lowest Educ Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Second Lowest Educ Prop")
+p10 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=`3`, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Second Highest Educ Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Second Highest Educ Prop")
+p11 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=`4`, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Highest Educ Prop by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Highest Educ Prop")
+p12 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=VALUEH, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Median Home Value by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Median Home Value")
+p13 <- ggplot(data=final_df,aes(x=val_Any_Race_H,y=HHINCOME, group=val_Any_Race_H)) +
+  geom_boxplot() + 
+  labs(title="Median Household Income by Prop Hispanic",
+       x = "Prop Hispanic: High or Low?",
+       y = "Median Household Income")
+
+plot_grid(p1,p2,p3,p4,p5,
+          p6,p7,p8,p9,p10,
+          p11,p12,p13,ncol=3)
+```
 
 
+```{r fig.height=10, fig.width=8, message=FALSE}
+d1 <- ggplot(data=final_df,aes(x=SEX, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Sex")
+d2 <- ggplot(data=final_df,aes(x=LATIM_det, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. LAI Status")
+d3 <- ggplot(data=final_df,aes(x=val_Black_NON_H, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Prop Black Non-Hispanic")
+d4 <- ggplot(data=final_df,aes(x=val_Two_NON_H, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Prop Two or More Race Non-Hispanic")
+d5 <- ggplot(data=final_df,aes(x=val_White_NON_H, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Prop White Non-Hispanic")
+d6 <- ggplot(data=final_df,aes(x=val_Asian_NON_H, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Prop Asian Non-Hispanic")
+d7 <- ggplot(data=final_df,aes(x=val_Other_NON_H, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Prop Other Non-Hispanic")
+d8 <- ggplot(data=final_df,aes(x=val_Total, fill = val_Any_Race_H)) + 
+  geom_bar(position = "fill") + 
+  labs(title="Prop Hispanic vs. Prop Total Population")
+
+plot_grid(d1,d2,d3,d4,
+          d5,d6, d7, d8,
+          ncol=2)
+```
 
 # Logistic Regression Models
+
+```{r}
+
+```
 
 
 
