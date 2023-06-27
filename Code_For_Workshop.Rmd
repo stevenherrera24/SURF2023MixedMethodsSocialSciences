@@ -7,20 +7,278 @@ output: pdf_document
 
 The code below is intended to be used for educational purposes only. The data have been manipulated and are not representative of the population of interest used in my research work. Please do not circulate the materials used in this workshop outside of the SURF 2023 program. If you have any questions about the code, please email me at [rsherreratenorio@berkeley.edu](mailto:rsherreratenorio@berkeley.edu) and more of my information and background can be found on my website at [stevenherreratenorio.com](stevenherreratenorio.com). 
 
+```{r libraries, include = FALSE}
+pkgTest <- function(x) {
+  if (!require(x,character.only = TRUE))
+    {
+    install.packages(x,repos = "http://cran.r-project.org", dep=TRUE)
+    if(!require(x,character.only = TRUE)) stop("Package not found")
+    }
+}
+pkgTest("tidyverse")
+pkgTest("devtools")
+pkgTest("ggplot2")
+pkgTest("dplyr")
+pkgTest("labelled")
+pkgTest("Hmisc")
+
+library(tidyverse)
+library(devtools)
+library(ggplot2)
+library(dplyr)
+library(labelled)
+library(Hmisc)
+```
+
 # Introduction
 
 To read the data in from IPUMS, copy and paste the code they provide to read in the data. Remember, you also need to download the XML file and make sure that the file is located in the working directory. If you cloned this RMD file from Github and opened the files as a Project in RStudio, the following code should work.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+Below, we check to see if the working directory is in the correct spot:
+
+```{r working_directory, include = FALSE}
+# Check if your working directory is located in the correct place
+# It should have the end of the directory file have something like the following: '/SURF2023MixedMethodsSocialSciences'
+(WD <- getwd())
+```
+
+Below, we read in the data. There are three datasets of varying sizes. The original dataset downloaded from IPUMS had 23860598 observations and running models with such large sample sizes can be computationally costly. Each dataset below represents a simple random sample with sample sizes of 10000, 100000, and 1000000:
+
+```{r data_loading, include = TRUE}
+data_10000 <- readRDS("data_10000.Rds")
+data_100000 <- readRDS("data_100000.Rds")
+data_1000000 <- readRDS("data_1000000.Rds")
 ```
 
 
 # Data Manipulation (or Cleaning Data)
 
+Data cleaning is an important step in conducting statistical models for observational studies. It's important to define the variables of interest ahead of time, therefore you do not spend valuable time cleaning other variables that wouldn't be relevant for the study. However, variable selection for the study of interest must be clearly understood with reference to how you plan on integrating your quantitative analysis with your qualitative analysis. This example uses a convergent parallel design to inform the integration process found in the quantitative and qualitative analyses. Hence, our variable selection is informed in tandem with the qualitative analysis. 
 
+In some cases, it may not be suitable to define the variables of interest before cleaning your data. If the goal, for example, is to analyze variable strength in determining the outcome of interest amongst a large set of variables, variable selection will have to be approached more methodologically. See, for example, backwards selection, forwards selection, or step-wise selection approaches to do this. Cleaning the data should be done before such selection approaches, which we are *not* doing here.
+
+```{r data_cleaning, include = FALSE}
+# Cleaning individual-level variables of interest
+data_1000000_cleaned1 <- data_1000000 %>%
+  filter(
+    YEAR %in% c(2012:2018),
+    STATEFIP %in% c(1,5,10,11,12,13,21,22,24,28,37,40,45,47,48,51,54)
+  ) %>%
+  mutate(
+    RACE_new = case_when(
+      # Individuals that report their race as 1, or White, are recoded as White
+      RACE == 1 ~ "White",
+      # Individuals that report their race as 2, or Black/African American/Negro, are recoded as Black
+      RACE == 2 ~ "Black",
+      # Individuals that report their race as 4 (Chinese), 5 (Japanese), or 6 (Other Asian or Pacific Islander)
+      # are recoded as Asian
+      RACE %in% c(4,5,6) ~ "Asian",
+      # Individuals that report their race as 8 (Two major races) or 9 (Three or more major races)
+      # are recoded as Two or More
+      RACE %in% c(8,9) ~ "Two Or More",
+      # Individuals that report anything else (i.e., Native American) are binned together
+      TRUE ~ "Other"),
+    EDUC_new = case_when(
+      # Individuals that report their education as less than 6 (Less than 12th grade education) are recoded as 4
+      # to represent those with less than a U.S. standard completion of high school
+      EDUC < 6 ~ 4,
+      # Individuals that report their education as 6 (12th grade education) are recoded as 3 to represent those
+      # only with a U.S. standard completion of high school
+      EDUC == 6 ~ 3,
+      # Individuals that report their education as 7 (1 year of college), 8 (2 years), or 9 (3 years) are recoded
+      # as 2 to represent those with some years of college, but less than a standard 4-year college education
+      EDUC %in% c(7,8,9) ~ 2,
+      # Individuals that report their education as 10 (4 years of college) or 11 (5+ years of college) are recoded
+      # as 1 to represent those with a 4-year college degree or more
+      EDUC %in% c(10,11) ~ 1),
+    LATIM = case_when(
+      # Individuals born in a Latin American country had their values from IPUMS converted
+      BPLD == 20000 ~ "Mexico",
+      BPLD == 25000 ~ "Cuba",
+      BPLD == 26010 ~ "Dominican Republic",
+      BPLD == 26020 ~ "Haiti",
+      BPLD == 21020 ~ "Costa Rica",
+      BPLD == 21030 ~ "El Salvador",
+      BPLD == 21040 ~ "Guatemala",
+      BPLD == 21050 ~ "Honduras",
+      BPLD == 21060 ~ "Nicaragua",
+      BPLD == 21070 ~ "Panama",
+      BPLD == 30005 ~ "Argentina",
+      BPLD == 30010 ~ "Bolivia",
+      BPLD == 30015 ~ "Brazil",
+      BPLD == 30020 ~ "Chile",
+      BPLD == 30025 ~ "Colombia",
+      BPLD == 30030 ~ "Ecuador",
+      BPLD == 30045 ~ "Paraguay",
+      BPLD == 30050 ~ "Peru",
+      BPLD == 30060 ~ "Uruguay",
+      BPLD == 30065 ~ "Venezuela",
+      TRUE ~ "Non-Latin American Immigrant"
+    ),
+    LATIM_det = case_when(
+      LATIM == "Non-Latin American Immigrant" ~ "Non-Latin American Immigrant",
+      TRUE ~ "Latin American Immigrant"
+    ),
+    HISPAN = case_when(
+      HISPAN == 0 ~ "Non-Hispanic",
+      TRUE ~ "Hispanic"
+    ))
+
+# Cleaning neighborhood-level variables of interest
+
+neighborhood_race <- data_1000000_cleaned1 %>%
+  filter(YEAR != 2018) %>%
+  mutate(
+    RACE_new_prop = case_when(
+      RACE_new == "White" & HISPAN == "Non-Hispanic" ~ "White_NON_H",
+      RACE_new == "Black" & HISPAN == "Non-Hispanic" ~ "Black_NON_H",
+      RACE_new == "Asian" & HISPAN == "Non-Hispanic" ~ "Asian_NON_H",
+      RACE_new == "Two Or More" & HISPAN == "Non-Hispanic" ~ "Two_NON_H",
+      RACE_new == "Other" & HISPAN == "Non-Hispanic" ~ "Other_NON_H",
+      TRUE ~ "Any_Race_H")) %>%
+# Aggregate data by neighborhood PUMA, year, and state to collect the counts of these groups
+  group_by(PUMA, YEAR, STATEFIP, RACE_new_prop) %>%
+# Use person weights to get the accurate number of individuals residing in our unit of analysis: the PUMA
+  summarise(N = sum(PERWT), .groups = 'drop') %>%
+  ungroup() %>%
+# Rotate to create each group identity as a variable
+  pivot_wider(names_from = RACE_new_prop, values_from = N, values_fill = 0)
+
+# Create a dataframe that contains neighborhood race proportion
+neighborhood_race_prop <- cbind(neighborhood_race[1:3], prop.table(as.matrix(neighborhood_race[-1:-3]), margin = 1)) %>%
+  group_by(YEAR) %>%
+  mutate(across(contains('_H'),
+         .fns = list(val = ~cut2(., g = 4) %>% as.numeric()),
+         .names = "{fn}_{col}")) %>%
+  ungroup()
+
+neighborhood_educ <- data_1000000_cleaned1 %>%
+  filter(YEAR != 2018) %>%
+  group_by(PUMA, YEAR, STATEFIP, EDUC_new) %>%
+  summarise(N = sum(PERWT), .groups = 'drop') %>%
+  ungroup() %>%
+  pivot_wider(names_from = EDUC_new, values_from = N, values_fill = 0)
+
+# Create a dataframe that contains neighborhood total population proportion
+neighborhood_total_prop <- neighborhood_race %>%
+  mutate(Total = .[["Any_Race_H"]] + .[["Asian_NON_H"]] + .[["Black_NON_H"]] +
+           .[["Other_NON_H"]] + .[["Two_NON_H"]] + .[["White_NON_H"]]) %>%
+  mutate(across(contains('Total'),
+         .fns = list(val = ~cut2(., g = 4) %>% as.numeric()),
+         .names = "{fn}_{col}")) %>%
+  dplyr::select(-Any_Race_H, -Asian_NON_H, -Black_NON_H,
+                -Other_NON_H, -Two_NON_H, -White_NON_H)
+
+# Create a dataframe that contains neighborhood education proportion
+neighborhood_educ_prop <- cbind(neighborhood_educ[1:3], prop.table(as.matrix(neighborhood_educ[-1:-3]), margin = 1)) %>%
+  group_by(YEAR) %>%
+  mutate(across(contains('1') | contains('2') | contains('3') | contains('4') ,
+         .fns = list(val = ~cut2(., g = 4) %>% as.numeric()),
+         .names = "{fn}_{col}")) %>%
+  ungroup()
+
+# Create a dataframe that contains neighborhood median home prices
+neighborhood_home_value_prop <- data_1000000_cleaned1 %>%
+  filter(YEAR != 2018, VALUEH != 9999999) %>%
+  group_by(PUMA, YEAR, STATEFIP) %>%
+  summarise_at(c("VALUEH"), funs(median(.))) %>%
+  ungroup() %>%
+  group_by(YEAR) %>%
+  mutate(across(contains('VALUEH'),
+         .fns = list(val = ~cut2(., g = 4) %>% as.numeric()),
+         .names = "{fn}_{col}")) %>%
+  ungroup()
+
+# Create a dataframe that contains neighborhood median household income
+neighborhood_hhincome_prop <- data_1000000_cleaned1 %>%
+  filter(YEAR != 2018, HHINCOME != 9999999) %>%
+  group_by(PUMA, YEAR, STATEFIP) %>%
+  summarise_at(c("HHINCOME"), funs(median(.))) %>%
+  ungroup() %>%
+  group_by(YEAR) %>%
+  mutate(across(contains('HHINCOME'),
+         .fns = list(val = ~cut2(., g = 4) %>% as.numeric()),
+         .names = "{fn}_{col}")) %>%
+  ungroup()
+
+# Aggregate all neighborhood-level variables
+neighborhood_data <- neighborhood_race_prop %>%
+  left_join(neighborhood_total_prop, by = c("PUMA", "YEAR", "STATEFIP")) %>%
+  left_join(neighborhood_educ_prop, by = c("PUMA", "YEAR", "STATEFIP")) %>%
+  left_join(neighborhood_home_value_prop, by = c("PUMA", "YEAR", "STATEFIP")) %>%
+  left_join(neighborhood_hhincome_prop, by = c("PUMA", "YEAR", "STATEFIP"))
+  
+# Combine individual-level and neighborhood-level data
+
+final_df <- data_1000000_cleaned1 %>% 
+  filter(
+    YEAR %in% c(2013:2018),
+    # Filter for recently-moved individuals in the past year within (23) & between PUMAs within a state (24),
+    # between contiguous (31) and non-contiguous states (32), and internationally (40)
+    MIGRATE1D %in% c(23, 24, 31, 32, 40)) %>%
+  mutate(HHINCOME != 9999999) %>%
+  rename(HHINCOME_ind = HHINCOME) %>%
+  dplyr::select(PUMA, MIGRATE1D, YEAR, STATEFIP,
+                AGE, SEX, RACE_new, BPLD, EDUC_new,
+                LATIM, LATIM_det, HHINCOME_ind) %>%
+  arrange(PUMA, YEAR) %>%
+  mutate(YEAR = YEAR-1) %>%
+  left_join(neighborhood_data %>% mutate(PUMA = as.integer(PUMA)), by = c("PUMA", "YEAR", "STATEFIP")) %>%
+  mutate(YEAR = YEAR+1)
+```
+
+After cleaning our data, which includes combining individual-level and neighborhood-level data together to analyze migration transitions, it's time to create an informative code book. This is helpful to keep track of how we operationalized the variables, which will be useful for the final write-up. 
+
+```{r load_main_df, include = TRUE}
+# saveRDS(final_df, file = "final_df.Rds")
+final_df <- readRDS("final_df.Rds")
+```
+
+```{r informative_codebook, include = TRUE}
+cbind(names(final_df),
+tibble("Description" = c("Public-use microdata area that represents a 1 in 100 person sample and we operationalize this as the neighborhood",
+                         "Categories representing whether the individual moved within and/or between PUMAs, state, or international lines in the past year",
+                         "Year that the individual moved",
+                         "Code the identifies U.S. states, otherwise known as federal information processing system codes",
+                         "Age of the individual",
+                         "Sex of the individual",
+                         "Self-identified, simplified 'race' category of the individual",
+                         "Birthplace of the individual, indicating the U.S. state or foreign country where the person was born",
+                         "Simplified education category of the individual in the dataset",
+                         "If a Latin American immigrant, where the individual was from country-wise",
+                         "Whether the person is a Latin American-born immigrant or not",
+                         "Household income of the individual",
+                         "Proportion of Hispanics (any race) in the neighborhood",
+                         "Proportion of non-Hispanic Black people in the neighborhood",
+                         "Proportion of non-Hispanic people that identified with two or more 'races' in the neighborhood",
+                         "Proportion of non-Hispanic White people in the neighborhood",
+                         "Proportion of non-Hispanic Asian people in the neighborhood",
+                         "Proportion of non-Hispanic people that identified with other 'race' in the neighborhood",
+                         "Relative degree of Hispanics (any race) amongst all neighborhoods",
+                         "Relative degree of non-Hispanic Black people amongst all neighborhoods",
+                         "Relative degree of non-Hispanic people that identified with two or more 'races' amongst all neighborhoods",
+                         "Relative degree of non-Hispanic White people amongst all neighborhoods",
+                         "Relative degree of non-Hispanic Asian people amongst all neighborhoods",
+                         "Relative degree of non-Hispanic people that identified with other 'race' amongst all neighborhoods",
+                         "Total number of people in the neighborhood",
+                         "Relative degree of total people amongst all neighborhoods",
+                         "Proportion of people with the 'lowest' education background in the neighborhood",
+                         "Proportion of people with the second 'lowest' education background in the neighborhood",
+                         "Proportion of people with the second 'highest' education background in the neighborhood",
+                         "Proportion of people with the 'highest' education background in the neighborhood",
+                         "Relative degree of people with the 'lowest' education background amongst all neighborhoods",
+                         "Relative degree of people with the second 'lowest' education background amongst all neighborhoods",
+                         "Relative degree of people with the second 'highest' education background amongst all neighborhoods",
+                         "Relative degree of people with the 'highest' education background amongst all neighborhoods",
+                         "Median household purchase value in the neighborhood",
+                         "Relative degree of median household purchase value amongst all neighborhoods",
+                         "Median household income in the neighborhood",
+                         "Relative degree of median household income amongst all neighborhoods")))
+```
 
 # Exploratory Data Analysis (EDA)
+
+Now that we have our 
 
 
 

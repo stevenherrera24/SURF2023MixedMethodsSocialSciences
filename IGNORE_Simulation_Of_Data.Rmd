@@ -1,0 +1,103 @@
+---
+title: "Simulation of Existing Dataset"
+author: "Steven Herrera Tenorio"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r libraries, include = FALSE}
+pkgTest <- function(x) {
+  if (!require(x,character.only = TRUE))
+    {
+    install.packages(x,repos = "http://cran.r-project.org", dep=TRUE)
+    if(!require(x,character.only = TRUE)) stop("Package not found")
+    }
+}
+pkgTest("tidyverse")
+pkgTest("devtools")
+pkgTest("ggplot2")
+pkgTest("dplyr")
+pkgTest("labelled")
+pkgTest("Hmisc")
+
+library(tidyverse)
+library(devtools)
+library(ggplot2)
+library(dplyr)
+library(labelled)
+library(Hmisc)
+
+# If running the following package does not automatically download, you might have the following text in your console:
+
+# Downloading GitHub repo debruine/faux@HEAD
+# These packages have more recent versions available.
+# It is recommended to update all of them.
+# Which would you like to update?
+
+#I updated them all: type in '1' then Enter in the console and it should work.
+devtools::install_github("debruine/faux")
+library(faux)
+```
+
+```{r read_data, include = FALSE}
+# NOTE: To load data, you must download both the extract's data and the DDI
+# and also set the working directory to the folder with these files (or change the path below).
+
+if (!require("ipumsr")) stop("Reading IPUMS data into R requires the ipumsr package. It can be installed using the following command: install.packages('ipumsr')")
+
+ddi <- read_ipums_ddi("usa_00018.xml")
+data <- read_ipums_micro(ddi)
+```
+
+```{r simulate, include = FALSE}
+#Check if the correlations between VALUEH (home value) and AGE (age of individual) for the year 2014 is similar to the simulated version of the data
+
+# Cleaned Data for Exercise
+data_cleaned <- data %>%
+  mutate(VALUEH = labelled::remove_val_labels(VALUEH),
+         HHINCOME = labelled::remove_val_labels(HHINCOME)) %>%
+  dplyr::select(VALUEH, HHINCOME, YEAR) %>%
+  filter(VALUEH != 9999999, YEAR == 2014,
+         VALUEH < 500000)
+
+# Simulated Data for Exercise
+data_cleaned_simulate <- data[sample(nrow(data), 10000), ] %>%
+  mutate(VALUEH = labelled::remove_val_labels(VALUEH),
+         HHINCOME = labelled::remove_val_labels(HHINCOME)) %>%
+  dplyr::select(VALUEH, HHINCOME, YEAR) %>%
+  filter(VALUEH != 9999999, YEAR == 2014,
+         VALUEH < 500000)
+
+# Regular Data
+dim(data_cleaned)[1]
+ggplot(data_cleaned, 
+       mapping = aes(x = VALUEH, HHINCOME)) + 
+  geom_point()
+
+# Simulated Data
+dim(data_cleaned_simulate)[1]
+ggplot(data_cleaned_simulate, 
+       mapping = aes(x = VALUEH, HHINCOME)) + 
+  geom_point()
+```
+
+
+```{r save_data}
+set.seed(123458)
+data_10000 <- data[sample(nrow(data), 10000), ] 
+data_100000 <- data[sample(nrow(data), 100000), ] 
+data_1000000 <- data[sample(nrow(data), 1000000), ] 
+```
+
+
+```{r}
+# Uncomment the following lines to save the datasets created above:
+
+# saveRDS(data_10000, file = "data_10000.Rds")
+# saveRDS(data_100000, file = "data_100000.Rds")
+# saveRDS(data_1000000, file = "data_1000000.Rds")
+```
+
+
+
+
