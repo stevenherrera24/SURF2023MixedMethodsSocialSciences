@@ -22,6 +22,11 @@ pkgTest("dplyr")
 pkgTest("labelled")
 pkgTest("Hmisc")
 pkgTest("cowplot")
+pkgTest("kableExtra")
+pkgTest("broom")
+pkgTest("arm")
+pkgTest("pROC")
+pkgTest("regclass")
 
 library(tidyverse)
 library(devtools)
@@ -30,6 +35,11 @@ library(dplyr)
 library(labelled)
 library(Hmisc)
 library(cowplot)
+library(kableExtra)
+library(broom)
+library(arm)
+library(pROC)
+library(regclass)
 ```
 
 # Introduction
@@ -406,16 +416,73 @@ plot_grid(d1,d2,d3,d4,
 # Logistic Regression Models
 
 ```{r}
+full_model <- glm(val_Any_Race_H ~ AGE + SEX + RACE_new +
+                    LATIM_det + HHINCOME_ind + val_Black_NON_H +
+                    val_Two_NON_H + val_White_NON_H + val_Asian_NON_H +
+                    val_Other_NON_H + val_Total + val_1 +
+                    val_2 + val_3 + val_4 + val_VALUEH + val_HHINCOME, 
+                  family=binomial, data = final_df %>% 
+                    filter(HHINCOME_ind!=9999999))
 
+kable(tidy(full_model), format="markdown", digits = 3)
+```
+
+```{r}
+model.selected.backwards <- step(full_model,direction="backward")
+
+kable(tidy(model.selected.backwards), format="markdown", digits = 3)
+```
+
+```{r}
+tidy(model.selected.backwards) %>%
+  mutate(estimate= exp(estimate))
 ```
 
 
 
 # Model Assessment
 
+Assessing how good the model is using the following:
+
+- Good binned residual vs. predicted plot
+
+- Good binned residual vs. numerical explanatory plots
+
+- Large area under the ROC curve
+
+- VIF values under 10
+
+```{r}
+final_analysis_df <- final_df %>% filter(HHINCOME_ind!=9999999) %>%
+  mutate(Residuals = residuals.glm(model.selected.backwards,type="response"),
+         Predicted = predict.glm(model.selected.backwards,type="response"))
+
+binnedplot(final_analysis_df$Predicted, final_analysis_df$Residuals,
+           xlab="Predicted Probabilities",
+           ylab="Residuals",
+           main="Binned Residuals vs. Predicted Probabilities")
+```
+
+```{r fig.height=4, fig.width=4, echo=F}
+binnedplot(final_analysis_df$AGE, final_analysis_df$Residuals, xlab="AGE",
+           ylab="Residuals",main="Binned Residuals vs. AGE")
+
+binnedplot(final_analysis_df$HHINCOME_ind, final_analysis_df$Residuals,xlab="Household Income",
+           ylab="Residuals",main="Binned Residuals vs. Height")
+```
 
 
-# Predictions
+```{r}
+ROC.ten <- roc(final_analysis_df$val_Any_Race_H, final_analysis_df$Predicted, plot=T)
+```
+
+```{r}
+ROC.ten$auc
+```
+
+```{r}
+tidy(VIF(model.selected.backwards))
+```
 
 
-
+# Thank you!
